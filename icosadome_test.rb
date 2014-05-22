@@ -8,7 +8,7 @@ describe IcosaDome do
     @dome = IcosaDome.new
     @dome.make_dome(1)
     @vertices = @dome.vertices
-    @surfaces = @dome.surfaces
+    @surfaces = @dome.surfaces_by_location
   end
 
   describe "converting spherical coords to cartesian coords" do
