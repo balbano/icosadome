@@ -1,4 +1,5 @@
 /pics/
 /runs/
 /research/
-*.swp
+.*.sw?
+*~

@@ -7,7 +7,7 @@ describe IcosaDome do
   before do
     @dome = IcosaDome.new
     @dome.make_dome(1)
-    @vertices = @dome.vertices
+    @vertices = @dome.vertices_by_location
     @surfaces = @dome.surfaces_by_location
   end
 

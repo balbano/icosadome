@@ -1,87 +1,26 @@
 require 'openstudio'
 
+# Make a dome! Make an instance of IcosaDome and call make_dome(radius).
 class IcosaDome < OpenStudio::Model::Model
-  attr_reader :radius, :vertices, :surfaces_by_location
+  attr_reader :radius, :vertices_by_location, :surfaces_by_location
 
   def make_dome(radius)
-    @surface_types_by_location = { roof: 'RoofCeiling', upper_wall: 'Wall',
-                                   lower_wall: 'Wall', floor: 'Floor' }
-    @radius = radius
-    @vertices = make_vertices(@radius)
-    @vertices = raise_to_ground_plane(@vertices, @radius)
-    @vertices_by_face = make_vertices_by_face(@vertices)
-    @surfaces_by_location = make_surfaces(@vertices_by_face)
-    make_space(@surfaces_by_location)
+    add_geometry(radius)
+    add_space
+    add_windows_by_location(:upper_wall, 0.8)
     add_thermal_zones
     add_hvac
-    @surfaces_by_location[:upper_wall].each { |surface| add_window(surface, 0.8) }
   end
 
-  def make_space(surfaces_by_location)
-    space = OpenStudio::Model::Space.new(self)
-    surfaces_by_location.each do |location, surfaces|
-      surfaces.each do |surface|
-        surface.setSpace(space)
-        surface.setSurfaceType(@surface_types_by_location[location])
-      end
-    end
-  end
-
-  def make_surfaces(vertices_by_face)
+  def add_geometry(radius)
+    @radius = radius
+    @vertices_by_location = {}
     @surfaces_by_location = {}
-    vertices_by_face.each do |location, faces|
-      @surfaces_by_location[location] = []
-      faces.each do |face|
-        surface = make_surface(face)
-        @surfaces_by_location[location] << surface
-      end
-    end
-    @surfaces_by_location
+    add_vertices_by_location(@radius)
+    add_surfaces_by_location(@vertices_by_location)
   end
 
-  def make_surface(points)
-    point_vector = OpenStudio::Point3dVector.new(points)
-    OpenStudio::Model::Surface.new(point_vector, self)
-  end
-
-  def add_thermal_zones
-    getSpaces.each do |space|
-      next unless space.thermalZone.empty?
-      new_thermal_zone = OpenStudio::Model::ThermalZone.new(self)
-      space.setThermalZone(new_thermal_zone)
-    end
-  end
-
-  def add_hvac
-    # System 2 is a packaged terminal heat pump.
-    OpenStudio::Model.addSystemType2(self, getThermalZones)
-  end
-
-  def add_window(surface, ratio)
-    ratio = 1 - ratio
-    window_vertices = OpenStudio::Point3dVector.new
-    surface.vertices.each do |vertex|
-      x = vertex.x + (surface.centroid.x - vertex.x) * ratio
-      y = vertex.y + (surface.centroid.y - vertex.y) * ratio
-      z = vertex.z + (surface.centroid.z - vertex.z) * ratio
-      window_vertices << OpenStudio::Point3d.new(x, y, z)
-    end
-    window = OpenStudio::Model::SubSurface.new(window_vertices, self)
-    window.setSurface(surface)
-  end
-
-  def make_vertices_by_face(vertices)
-    tops = [vertices[:top]] * 5 # Repeat the top point for zipping.
-    upper = vertices[:upper_pentagon]
-    lower = vertices[:lower_pentagon]
-    # Counter-clockwise defines outward facing normal.
-    { roof: tops.zip(upper.rotate, upper),
-      upper_wall: lower.zip(upper, upper.rotate),
-      lower_wall: upper.zip(lower, lower.rotate(-1)),
-      floor: [lower] }
-  end
-
-  def make_vertices(radius)
+  def add_vertices_by_location(radius)
     # Generate all the vertices of an icosahedron except the bottom vertex.
     # Returns hash containing the top point and the upper and lower pentagons.
     # Formula: http://en.wikipedia.org/wiki/Icosahedron#Spherical_coordinates
@@ -98,7 +37,7 @@ class IcosaDome < OpenStudio::Model::Model
       spherical_to_point3d(radius, -Math.atan(0.5), azimuth)
     end
 
-    vertices
+    @vertices_by_location = raise_to_ground_plane(vertices, radius)
   end
 
   def spherical_to_point3d(radius, altitude, azimuth)
@@ -124,6 +63,77 @@ class IcosaDome < OpenStudio::Model::Model
     y = radius * Math.cos(altitude) * Math.cos(azimuth)
     z = radius * Math.sin(altitude)
     [x, y, z].map { |i| i.round(10) }
+  end
+
+  def add_surfaces_by_location(vertices)
+    vertices_by_face = organize_vertices_by_face(vertices)
+    vertices_by_face.each do |location, faces|
+      @surfaces_by_location[location] = []
+      faces.each do |face|
+        surface = make_surface(face)
+        @surfaces_by_location[location] << surface
+      end
+    end
+  end
+
+  def make_surface(points)
+    point_vector = OpenStudio::Point3dVector.new(points)
+    OpenStudio::Model::Surface.new(point_vector, self)
+  end
+
+  def organize_vertices_by_face(vertices)
+    tops = [vertices[:top]] * 5 # Repeat the top point for zipping.
+    upper = vertices[:upper_pentagon]
+    lower = vertices[:lower_pentagon]
+    # Counter-clockwise defines outward facing normal.
+    { roof: tops.zip(upper.rotate, upper),
+      upper_wall: lower.zip(upper, upper.rotate),
+      lower_wall: upper.zip(lower, lower.rotate(-1)),
+      floor: [lower] }
+  end
+
+  def add_space
+    surface_types_by_location = { roof: 'RoofCeiling', upper_wall: 'Wall',
+                                  lower_wall: 'Wall', floor: 'Floor' }
+    space = OpenStudio::Model::Space.new(self)
+    @surfaces_by_location.each do |location, surfaces|
+      surfaces.each do |surface|
+        surface.setSpace(space)
+        surface.setSurfaceType(surface_types_by_location[location])
+      end
+    end
+  end
+
+  def add_windows_by_location(location, ratio)
+    @surfaces_by_location[location].each do |surface|
+      add_window(surface, ratio)
+    end
+  end
+
+  def add_window(surface, ratio)
+    ratio = 1 - ratio
+    window_vertices = OpenStudio::Point3dVector.new
+    surface.vertices.each do |vertex|
+      x = vertex.x + (surface.centroid.x - vertex.x) * ratio
+      y = vertex.y + (surface.centroid.y - vertex.y) * ratio
+      z = vertex.z + (surface.centroid.z - vertex.z) * ratio
+      window_vertices << OpenStudio::Point3d.new(x, y, z)
+    end
+    window = OpenStudio::Model::SubSurface.new(window_vertices, self)
+    window.setSurface(surface)
+  end
+
+  def add_thermal_zones
+    getSpaces.each do |space|
+      next unless space.thermalZone.empty?
+      new_thermal_zone = OpenStudio::Model::ThermalZone.new(self)
+      space.setThermalZone(new_thermal_zone)
+    end
+  end
+
+  def add_hvac
+    # System 2 is a packaged terminal heat pump.
+    OpenStudio::Model.addSystemType2(self, getThermalZones)
   end
 
   def save_openstudio_osm(params)
