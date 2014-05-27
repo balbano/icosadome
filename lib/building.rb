@@ -9,6 +9,7 @@ class Building < OpenStudio::Model::Model
     faces = geometry.vertices_by_face
     surfaces = faces.map { |vertices| make_surface(vertices) }
     add_space(surfaces)
+    match_all_surfaces
     add_thermal_zones
   end
 
@@ -23,6 +24,11 @@ class Building < OpenStudio::Model::Model
       surface.setSpace(space)
       surface.assignDefaultSurfaceType
     end
+  end
+  
+  def match_all_surfaces
+    spaces = OpenStudio::Model::SpaceVector.new(getSpaces)
+    OpenStudio::Model.matchSurfaces(spaces) 
   end
 
   def add_windows(ratio)
