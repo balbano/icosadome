@@ -9,24 +9,12 @@ class Building < OpenStudio::Model::Model
     faces = geometry.vertices_by_face
     surfaces = faces.map { |vertices| make_surface(vertices) }
     add_space(surfaces)
-    add_windows(0.8)
     add_thermal_zones
   end
 
   def make_surface(points)
     point_vector = OpenStudio::Point3dVector.new(points)
     OpenStudio::Model::Surface.new(point_vector, self)
-  end
-
-  def organize_vertices_by_face(vertices)
-    tops = [vertices[:top]] * 5 # Repeat the top point for zipping.
-    upper = vertices[:upper_pentagon]
-    lower = vertices[:lower_pentagon]
-    # Counter-clockwise defines outward facing normal.
-    { roof: tops.zip(upper.rotate, upper),
-      upper_wall: lower.zip(upper, upper.rotate),
-      lower_wall: upper.zip(lower, lower.rotate(-1)),
-      floor: [lower] }
   end
 
   def add_space(surfaces)
