@@ -25,10 +25,10 @@ class Building < OpenStudio::Model::Model
       surface.assignDefaultSurfaceType
     end
   end
-  
+
   def match_all_surfaces
     spaces = OpenStudio::Model::SpaceVector.new(getSpaces)
-    OpenStudio::Model.matchSurfaces(spaces) 
+    OpenStudio::Model.matchSurfaces(spaces)
   end
 
   def add_windows(ratio)
@@ -60,29 +60,27 @@ class Building < OpenStudio::Model::Model
   end
 
   def add_thermostats(heating_setpoint: 24, cooling_setpoint: 28)
-    
-    time_24hrs = OpenStudio::Time.new(0,24,0,0)
+    time_24hrs = OpenStudio::Time.new(0, 24, 0, 0)
 
     cooling_sch = OpenStudio::Model::ScheduleRuleset.new(self)
-    cooling_sch.setName("Cooling Sch")
-    cooling_sch.defaultDaySchedule.setName("Cooling Sch Default")
-    cooling_sch.defaultDaySchedule.addValue(time_24hrs,cooling_setpoint)
+    cooling_sch.setName('Cooling Sch')
+    cooling_sch.defaultDaySchedule.setName('Cooling Sch Default')
+    cooling_sch.defaultDaySchedule.addValue(time_24hrs, cooling_setpoint)
 
     heating_sch = OpenStudio::Model::ScheduleRuleset.new(self)
-    heating_sch.setName("Heating Sch")
-    heating_sch.defaultDaySchedule.setName("Heating Sch Default")
-    heating_sch.defaultDaySchedule.addValue(time_24hrs,heating_setpoint)      
+    heating_sch.setName('Heating Sch')
+    heating_sch.defaultDaySchedule.setName('Heating Sch Default')
+    heating_sch.defaultDaySchedule.addValue(time_24hrs, heating_setpoint)
 
     new_thermostat = OpenStudio::Model::ThermostatSetpointDualSetpoint.new(self)
-    
+
     new_thermostat.setHeatingSchedule(heating_sch)
     new_thermostat.setCoolingSchedule(cooling_sch)
-    
-    self.getThermalZones.each do |zone|
+
+    getThermalZones.each do |zone|
       zone.setThermostatSetpointDualSetpoint(new_thermostat)
     end
-
-  end  
+  end
 
   def add_hvac
     # System 2 is a packaged terminal heat pump.
