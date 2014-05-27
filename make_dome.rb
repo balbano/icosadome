@@ -5,7 +5,8 @@ require_relative 'lib/geodesic_dome_1V'
 dome = GeodesicDome1V.new(radius: 4)
 building = Building.new
 building.make_building(dome)
-add_windows(0.8)
+building.add_windows(0.8)
+building.add_hvac
 
 puts 'Created new IcosaDome'
 export_directory = "#{Dir.pwd}/runs"

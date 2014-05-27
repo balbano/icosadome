@@ -23,4 +23,19 @@ describe Building do
     end
   end
 
+  describe 'thermal zones' do
+    it 'can add thermostats' do
+      @building.add_thermostats(heating_setpoint: 24, cooling_setpoint: 28)
+      @building.getThermalZones.each do |zone|
+        zone.thermostatSetpointDualSetpoint.empty?.must_equal false
+      end
+    end
+    it 'can add hvac' do
+      @building.add_hvac
+      @building.getThermalZones.each do |zone|
+        zone.equipment.length.wont_equal 0
+      end
+    end
+  end
+
 end
