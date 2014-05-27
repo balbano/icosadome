@@ -12,11 +12,11 @@ describe Building do
     @building.make_building(dome)
   end
 
-  describe "spaces" do
-    it "has 1 space" do
+  describe 'spaces' do
+    it 'has 1 space' do
       @building.getSpaces.length.must_equal 1
     end
-    it "has a thermal zone attched to each space" do
+    it 'has a thermal zone attched to each space' do
       @building.getSpaces.each do |space|
         space.thermalZone.empty?.must_equal false
       end

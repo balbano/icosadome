@@ -8,7 +8,7 @@ class GeodesicDome1V
     add_vertices
     raise_to_ground_plane
   end
-    
+
   def add_vertices
     # Formula: http://en.wikipedia.org/wiki/Icosahedron#Spherical_coordinates
     @vertices = []
@@ -25,7 +25,7 @@ class GeodesicDome1V
       @vertices << spherical_to_point3d(radius, -Math.atan(0.5), azimuth)
     end
   end
-  
+
   def raise_to_ground_plane
     pentagon_point_z = spherical_to_cartesian(radius, Math.atan(0.5), 0)[2]
     z_offset = OpenStudio::Vector3d.new(0, 0, pentagon_point_z)
@@ -68,5 +68,4 @@ class GeodesicDome1V
       upper_pentagon.zip(lower_pentagon, lower_pentagon.rotate(-1)) +
       [lower_pentagon]
   end
-  
 end

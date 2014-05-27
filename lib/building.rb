@@ -65,4 +65,3 @@ class Building < OpenStudio::Model::Model
     save(save_path, true)
   end
 end
-
