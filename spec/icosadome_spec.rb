@@ -46,6 +46,7 @@ describe Icosadome do
   end
 
   it 'can add a default construction set' do
+    @model.add_default_construction_set_from_template(@path_to_template)
     @building.defaultConstructionSet.empty?.must_equal false
   end
   
