@@ -87,6 +87,32 @@ class Icosadome < OpenStudio::Model::Model
     OpenStudio::Model.addSystemType2(self, getThermalZones)
   end
 
+  def add_default_space_type_from_template(path_to_template)
+    template_model = load_template_model(path_to_template)
+    template_building = template_model.getBuilding
+    template_space_type = template_building.spaceType.get
+    # Clone the space type into the current model
+    space_type = template_space_type.clone(self).to_SpaceType.get
+    building = getBuilding
+    building.setSpaceType(space_type)
+  end
+
+  def add_default_construction_set_from_template(path_to_template)
+    template_model = load_template_model(path_to_template)
+    template_building = template_model.getBuilding
+    template_construction_set = template_building.defaultConstructionSet.get
+    # Clone the construction set into the current model
+    construction_set = template_construction_set.clone(self).to_DefaultConstructionSet.get
+    building = getBuilding
+    building.setDefaultConstructionSet(construction_set)
+  end
+
+  def load_template_model(path_to_template)
+    translator = OpenStudio::OSVersion::VersionTranslator.new
+    template_model = translator.loadModel(path_to_template)
+    template_model.get
+  end
+
   def save_openstudio_osm(params)
     osm_save_directory = params[:osm_save_directory]
     osm_name = params[:osm_name]
