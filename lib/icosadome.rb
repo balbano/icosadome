@@ -1,10 +1,10 @@
 require 'openstudio'
 
 # Make a dome! Make an instance of IcosaDome and call make_dome(radius).
-class Building < OpenStudio::Model::Model
+class Icosadome < OpenStudio::Model::Model
   attr_reader :geometry
 
-  def make_building(geometry)
+  def make_icosadome(geometry)
     @geometry = geometry
     faces = geometry.vertices_by_face
     surfaces = faces.map { |vertices| make_surface(vertices) }
